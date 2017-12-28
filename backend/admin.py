@@ -1,5 +1,5 @@
 from django.contrib import admin
 
-from .models import Activity, ActivityLine
+from .models import Activity
 
-#admin.site.register(Activity, ActivityLine)
+admin.site.register(Activity)

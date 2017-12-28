@@ -1,10 +1,14 @@
 from django.http import HttpResponse
 from django.contrib.gis.geos import Point, LineString
-from .models import Activity, ActivityLine
+from .models import Activity
+import ast
 
+# locations = cod_des-cod_or	cod_des-cod_or1,cod_or2,cod_or3
 
-def index(request):
-	#geom = Point(1, 1)
+def index(request):	
+	# t = "(-75.574974, 6.307394),(-74.970628, 5.844590)"
+	# ls = LineString(ast.literal_eval(t))
+	# return HttpResponse(str(ls))
 	with open('legion_2003.tsv','r') as tsv:
 		for line in tsv:
 			field = line.strip().split('\t')
@@ -18,16 +22,14 @@ def index(request):
 			focush = str(field[8])					
 			vosh =	str(field[9])
 			resultsh = str(field[10])
-			cords = field[6].split(',')
 			#return HttpResponse(str(cords[1]))
-			if tipoh == "A":
-				geomh = Point(float(cords[0]),float(cords[1]))
-				act = Activity(tipo = tipoh,date = dateh, place = placeh, name = nameh, description = descriptionh, num_person = per_numh, geom = geomh,
-					instruments = instrumentsh, focus = focush, vos = vosh, result = resultsh)
+			if tipoh == "p":
+				geomh = Point(ast.literal_eval(field[6].strip()))
 			else:
-				geomh = LineString(field[6])
-				act = ActivityLine(tipo = tipoh,date = dateh, place = placeh, name = nameh, description = descriptionh, num_person = per_numh, geom = geomh,
+				geomh = LineString(ast.literal_eval(field[6].strip()))
+			act = Activity(tipo = tipoh,date = dateh, place = placeh, name = nameh, description = descriptionh, num_person = per_numh, geom = geomh,
 					instruments = instrumentsh, focus = focush, vos = vosh, result = resultsh)
+			
 			act.save()
 
 	return HttpResponse("Alers Rocking")
