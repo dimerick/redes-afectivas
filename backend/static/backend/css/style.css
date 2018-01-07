@@ -1,0 +1,10 @@
+form p label{
+	display: block;
+}
+form p{
+	margin-bottom: 20px;
+}
+#cont-form {
+	width: 50%;
+	margin: 0 auto;
+}

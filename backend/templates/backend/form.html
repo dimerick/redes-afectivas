@@ -1,0 +1,13 @@
+{% extends "backend/template.html" %}
+{% block title %}
+Mi primer django.forms
+{% endblock %}
+{% block main_content %}
+<div id="cont-form">
+<form action="{% url 'redes-afectivas:create-activity' %}" method="post">
+    {% csrf_token %}
+    {{ form.as_p}}
+    <p><input type="submit" value="Enviar"/></p>
+</form>
+</div>
+{% endblock %}
