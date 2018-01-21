@@ -4,6 +4,7 @@ from .models import Activity
 import ast
 from django.shortcuts import render
 from .forms import Create_Activity
+from .models import Activity
 
 # locations = cod_des-cod_or	cod_des-cod_or1,cod_or2,cod_or3
 
@@ -36,6 +37,14 @@ def index(request):
 
 	return HttpResponse("Alers Rocking")
 
+def get_geometries(request):
+	activities = Activity.objects.all()
+	file = open('geometries.txt','w')
+	for act in activities:
+		pnt = GEOSGeometry(act.geom)
+		print(pnt.coords[0])
+		file.write(str(pnt.coords[0])+";"+str(pnt.coords[1])+"\n")	
+	return HttpResponse("Se ha generado el archivo con las geometrias exitosamente")
 
 def create_activity(request):
 	if request.method == 'POST':
@@ -63,4 +72,175 @@ def create_activity(request):
 		form = Create_Activity()
 	return render(request, 'backend/form.html', {'form': form})
 
+def edit_activity(request, pk, geom_WKT):
+	# return HttpResponse("pk: " + str(pk) + " geom_WKT: " + geom_WKT)
+	act = Activity.objects.get(id=pk)
+	geom = GEOSGeometry(geom_WKT)
+	act.geom = geom
+	act.save()
+	return HttpResponse("Edit Ok")
 
+def upload2007(request):
+	# return HttpResponse("Se cargaran las actividades del 2007")
+	i = 2
+	with open('DB_2007_mod.tsv','r') as tsv:
+		for line in tsv:
+			field = line.strip().split('\t')
+			date = conv_date(field[0])
+			place = field[1]
+			name = field[2]
+			description = field[3]
+			num_person = field[4]
+			geom_WKT = field[5]
+			instruments = ""
+			focus = ""
+			vos = ""
+			result = ""
+			try:
+				geom = GEOSGeometry(geom_WKT)
+			except ValueError:
+				print("Se produjo un error con la geometria: ", i, geom_WKT)
+			print(i, date, place, name, description, num_person, geom.geom_type)
+			act = Activity(date = date, place = place, name = name, description = description, num_person = num_person, geom = geom,
+					instruments = instruments, focus = focus, vos = vos, result = result)
+			act.save()
+			i += 1
+	return HttpResponse("Load Ok")
+
+def upload2013(request):
+	i = 2
+	with open('DB_2013_mod.tsv','r') as tsv:
+		for line in tsv:
+			field = line.strip().split('\t')
+			date = conv_date(field[3])
+			place = field[2]
+			name = field[1]
+			description = field[0]
+			num_person = field[4].replace(".", "")
+			lon = fix_lon(field[6])
+			lat = fix_lat(field[7])
+			geom_WKT = "POINT(" + lon + " " + lat + ")"			
+			instruments = field[5]
+			focus = ""
+			vos = ""
+			result = ""
+			geom = GEOSGeometry(geom_WKT)
+			act = Activity(date = date, place = place, name = name, description = description, num_person = num_person, geom = geom,
+					instruments = instruments, focus = focus, vos = vos, result = result)
+			act.save()
+			print(i, date, place, name, description, num_person, geom.geom_type)
+			i += 1
+	return HttpResponse("Load 2013 Ok")
+	# return HttpResponse("Se cargaran las actividades del 2013")
+
+def upload2009(request):
+	i = 2
+	with open('DB_2009_mod.tsv','r') as tsv:
+		for line in tsv:
+			field = line.strip().split('\t')
+			date = conv_date(field[0])
+			place = field[1]
+			name = ""
+			description = field[2]
+			num_person = int(field[3].replace(".", ""))
+			geom_WKT = field[4]
+			instruments = ""
+			focus = ""
+			vos = ""
+			result = ""
+			geom = GEOSGeometry(geom_WKT)
+			act = Activity(date = date, place = place, name = name, description = description, num_person = num_person, geom = geom,
+					instruments = instruments, focus = focus, vos = vos, result = result)
+			act.save()
+			print(i, date, place, name, description, num_person, geom.geom_type)
+			i += 1
+	return HttpResponse("Load 2009 Ok")
+	# return HttpResponse("Se cargaran las actividades del 2009")
+
+def upload2014(request):
+	i = 1
+	with open('DB_2014_mod.tsv','r') as tsv:
+		for line in tsv:
+			field = line.strip().split('\t')
+			date = conv_date_new(field[1])
+			place = field[0]
+			name = field[6]
+			description = field[4]
+			num_person = int(field[2].replace(".", ""))
+			lon = fix_lon(field[7])
+			lat = fix_lat(field[8])
+			geom_WKT = "POINT(" + lon + " " + lat + ")"
+			instruments = ""
+			focus = field[3]
+			vos = field[5]
+			result = ""
+			geom = GEOSGeometry(geom_WKT)
+			act = Activity(date = date, place = place, name = name, description = description, num_person = num_person, geom = geom,
+					instruments = instruments, focus = focus, vos = vos, result = result)
+			act.save()
+			print(i, date, place, name, description, focus, vos, num_person, geom.geom_type)
+			i += 1
+	return HttpResponse("Load 2014 Ok")
+
+def upload2015(request):
+	i = 2
+	with open('DB_2015_mod.tsv','r') as tsv:
+		for line in tsv:
+			field = line.strip().split('\t')
+			date = conv_date(field[1])
+			place = field[2]
+			name = field[0]
+			description = field[4]
+			num_person = int(field[3].replace(".", ""))
+			lon = fix_lon(field[6])
+			lat = fix_lat(field[5])
+			geom_WKT = "POINT(" + lon + " " + lat + ")"
+			instruments = ""
+			focus = ""
+			vos = ""
+			result = ""
+			geom = GEOSGeometry(geom_WKT)
+			act = Activity(date = date, place = place, name = name, description = description, num_person = num_person, geom = geom,
+					instruments = instruments, focus = focus, vos = vos, result = result)
+			act.save()
+			print(i, date, place, name, description, num_person, geom.geom_type)
+			i += 1
+	return HttpResponse("Load 2015 Ok")
+
+#Convierte una fecha del tipo MM/DD/YYYY yo YYYY-MM-DD
+def conv_date(d):
+	l = d.split("/")
+	return l[2] + "-" + l[0] + "-" + l[1]
+
+#Convierte una fecha del tipo DD/MM/YYYY yo YYYY-MM-DD
+def conv_date_new(d):
+	l = d.split("-")
+	return l[2] + "-" + l[1] + "-" + l[0]
+
+#Arregla la longitud
+def fix_lon(lon):
+	lon = lon.strip()
+	lon = lon.replace(".", "")
+	lon = lon.replace(",", "")
+	cadena = ""
+	i = 0
+	for l in lon:
+		if i == 3:
+			cadena += "."
+		cadena += l
+		i += 1
+	return cadena
+
+#Arregla la latitud
+def fix_lat(lat):
+	lat = lat.strip()
+	lat = lat.replace(".", "")
+	lat = lat.replace(",", "")
+	cadena = ""
+	i = 0
+	for l in lat:
+		if i == 1:
+			cadena += "."
+		cadena += l
+		i += 1
+	return cadena

@@ -1,5 +1,5 @@
 from django.contrib.gis.db import models
-from django.contrib.gis.geos import Point
+from django.contrib.gis.geos import WKTWriter
 
 # Create your models here.
 class Activity(models.Model):
@@ -15,7 +15,8 @@ class Activity(models.Model):
 	result = models.TextField(null=True)
 
 	def __str__(self):
-		return self.description
+		wkt_w = WKTWriter()
+		return str(self.id)+" | "+str(self.date)+" | "+self.place+" | "+self.description+" | "+str(wkt_w.write(self.geom))
 
 # class Activity(models.Model):
 # 	geom = models.GeometryField()
