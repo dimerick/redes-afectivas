@@ -60,7 +60,7 @@ def activity_for_municipio(request, date_s, date_f, pk_mun):
 	Devuelves las actividades realizadas en un municpio en un rango de fechas en formato GeoJson
 	"""
 	with connection.cursor() as cursor:
-		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, row_to_json(lp) As properties FROM backend_activity As lg INNER JOIN (SELECT id, date, place FROM backend_activity) As lp ON lg.id = lp.id, municipios m WHERE m.id=%s AND lp.date BETWEEN %s AND %s AND ST_Within(lg.geom, ST_Transform(m.geom, 4326))=true) As f) As fc;", [pk_mun, date_s, date_f])
+		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, row_to_json(lp) As properties FROM backend_activity As lg INNER JOIN (SELECT id, date, place, name, description, num_person, instruments, focus, vos, result FROM backend_activity) As lp ON lg.id = lp.id, municipios m WHERE m.id=%s AND lp.date BETWEEN %s AND %s AND ST_Within(lg.geom, ST_Transform(m.geom, 4326))=true) As f) As fc;", [pk_mun, date_s, date_f])
 		row = cursor.fetchone()
 	return HttpResponse(json.dumps(row[0]))
 	# return HttpResponse(serialize('geojson', Activity.objects.filter(geom__within=poly, date__range=(date_s, date_f)), geometry_field='geom', fields=('name',)))
