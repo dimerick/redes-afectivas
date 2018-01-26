@@ -1,6 +1,8 @@
-from django.urls import path
+from django.urls import include, path
 
 from . import views
+
+
 
 app_name = 'redes-afectivas'
 urlpatterns = [
@@ -13,4 +15,9 @@ urlpatterns = [
     path('upload-2014/', views.upload2014, name='upload-2014'),
     path('upload-2015/', views.upload2015, name='upload-2015'),
     path('get-geometries/', views.get_geometries, name='get-geometries'),
+    path('activities/', views.activity_list, name='activities'),
+    path('activities/<str:date_s>/<str:date_f>', views.activity_for_date, name='activities-for-date'),
+    path('activities/<str:date_s>/<str:date_f>/<str:pk_mun>', views.activity_for_municipio, name='activities-for-municipio'),
+    # path('users/', views.UserViewSet, name='users'),
+    # path('groups/', views.GroupViewSet, name='groups'),
 ]

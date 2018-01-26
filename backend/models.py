@@ -20,3 +20,4 @@ class Activity(models.Model):
 
 # class Activity(models.Model):
 # 	geom = models.GeometryField()
+

@@ -6,9 +6,68 @@ from django.shortcuts import render
 from .forms import Create_Activity
 from .models import Activity
 
+from django.db import connection #para ejecutar RAW queries
+
+#Practica DRF
+from django.contrib.auth.models import User, Group
+from rest_framework import viewsets
+from .serializers import UserSerializer, GroupSerializer, ActivitySerializer
+
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.renderers import JSONRenderer
+from rest_framework.parsers import JSONParser
+from django.core.serializers import serialize
+
+import json
 # locations = cod_des-cod_or	cod_des-cod_or1,cod_or2,cod_or3
 
-def index(request):	
+
+#Practica DRF
+class UserViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows users to be viewed or edited.
+    """
+    queryset = User.objects.all().order_by('-date_joined')
+    serializer_class = UserSerializer
+
+
+class GroupViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows groups to be viewed or edited.
+    """
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+
+@csrf_exempt
+def activity_list(request):
+    """
+    Devuelve las actividades registradas en formato GeoJson
+    """
+    if request.method == 'GET':
+    	return HttpResponse(serialize('geojson', Activity.objects.all(), geometry_field='geom', fields=('id', 'date', 'place', 'name', 'description', 'num_person', 'instruments', 'focus', 'vos', 'result')))
+
+@csrf_exempt
+def activity_for_date(request, date_s, date_f):
+    """
+    Devuelve las actividades registradas por rango de fechas en formato GeoJson
+    """
+    return HttpResponse(serialize('geojson', Activity.objects.filter(date__range=(date_s, date_f)), geometry_field='geom', fields=('id', 'date', 'place', 'name', 'description', 'num_person', 'instruments', 'focus', 'vos', 'result')))
+
+@csrf_exempt
+def activity_for_municipio(request, date_s, date_f, pk_mun):
+	"""
+	Devuelves las actividades realizadas en un municpio en un rango de fechas en formato GeoJson
+	"""
+	with connection.cursor() as cursor:
+		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, row_to_json(lp) As properties FROM backend_activity As lg INNER JOIN (SELECT id, date, place FROM backend_activity) As lp ON lg.id = lp.id, municipios m WHERE m.id=%s AND lp.date BETWEEN %s AND %s AND ST_Within(lg.geom, ST_Transform(m.geom, 4326))=true) As f) As fc;", [pk_mun, date_s, date_f])
+		row = cursor.fetchone()
+	return HttpResponse(json.dumps(row[0]))
+	# return HttpResponse(serialize('geojson', Activity.objects.filter(geom__within=poly, date__range=(date_s, date_f)), geometry_field='geom', fields=('name',)))
+
+
+
+def index(request):
 	# t = "(-75.574974, 6.307394),(-74.970628, 5.844590)"
 	# ls = LineString(ast.literal_eval(t))
 	# return HttpResponse(str(ls))
