@@ -65,7 +65,15 @@ def activity_for_municipio(request, date_s, date_f, pk_mun):
 	return HttpResponse(json.dumps(row[0]))
 	# return HttpResponse(serialize('geojson', Activity.objects.filter(geom__within=poly, date__range=(date_s, date_f)), geometry_field='geom', fields=('name',)))
 
-
+@csrf_exempt
+def nodes(request):
+	"""
+	Devuelve el centroide de cada uno de los municipios donde la legión del afecto realizó actividades
+	"""
+	with connection.cursor() as cursor:
+		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select DISTINCT ON (m.nombre_mpi) m.id, m.nombre_mpi, ST_Centroid(m.geom) as geom, a.date from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true order by m.nombre_mpi ASC, a.date ASC) as lp) As f) As fc;")
+		row = cursor.fetchone()
+	return HttpResponse(json.dumps(row[0]))
 
 def index(request):
 	# t = "(-75.574974, 6.307394),(-74.970628, 5.844590)"

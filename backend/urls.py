@@ -18,6 +18,7 @@ urlpatterns = [
     path('activities/', views.activity_list, name='activities'),
     path('activities/<str:date_s>/<str:date_f>', views.activity_for_date, name='activities-for-date'),
     path('activities/<str:date_s>/<str:date_f>/<str:pk_mun>', views.activity_for_municipio, name='activities-for-municipio'),
+    path('nodes', views.nodes, name='nodes'),
     # path('users/', views.UserViewSet, name='users'),
     # path('groups/', views.GroupViewSet, name='groups'),
 ]
