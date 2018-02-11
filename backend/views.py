@@ -71,7 +71,17 @@ def nodes(request):
 	Devuelve el centroide de cada uno de los municipios donde la legión del afecto realizó actividades
 	"""
 	with connection.cursor() as cursor:
-		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select DISTINCT ON (m.nombre_mpi) m.id, m.nombre_mpi, ST_Centroid(m.geom) as geom, a.date from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true order by m.nombre_mpi ASC, a.date ASC) as lp) As f) As fc;")
+		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select DISTINCT ON (m.nombre_mpi) m.id, m.nombre_mpi, ST_Transform(ST_Centroid(m.geom), 4326) as geom, a.date from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true order by m.nombre_mpi ASC, a.date ASC) as lp) As f) As fc;")
+		row = cursor.fetchone()
+	return HttpResponse(json.dumps(row[0]))
+
+@csrf_exempt
+def network(request):
+	"""
+	Devuelve la red de nodos del proyecto Legión del Afecto
+	"""
+	with connection.cursor() as cursor:
+		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select r.mpi1, r.mpi2, ST_MakeLine(r.geom1, r.geom2) as geom, r.distance from (select DISTINCT ON (n1.nombre_mpi) n1.id as id1, n1.nombre_mpi as mpi1, n1.geom as geom1, n1.date as date1, n2.id as id2, n2.nombre_mpi as mpi2, n2.geom as geom2, n2.date as date2, ST_Distance(n1.geom, n2.geom) as distance from (select DISTINCT ON (m.nombre_mpi) m.id, m.nombre_mpi, ST_Transform(ST_Centroid(m.geom), 4326) as geom, a.date from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true order by m.nombre_mpi ASC, a.date ASC) n1, (select DISTINCT ON (m.nombre_mpi) m.id, m.nombre_mpi, ST_Transform(ST_Centroid(m.geom), 4326) as geom, a.date from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true order by m.nombre_mpi ASC, a.date ASC) n2 where n1.id <> n2.id order by n1.nombre_mpi asc, distance asc) as r order by r.mpi1) as lp) As f) As fc;")
 		row = cursor.fetchone()
 	return HttpResponse(json.dumps(row[0]))
 
