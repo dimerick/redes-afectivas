@@ -85,6 +85,41 @@ def network(request):
 		row = cursor.fetchone()
 	return HttpResponse(json.dumps(row[0]))
 
+@csrf_exempt
+def network2(request):
+	"""
+	Devuelve la red de nodos del proyecto Legión del Afecto, cada nodo debe estar unido a los 2 nodos mas cercanos
+	"""
+	i = 0
+	j = 0
+	k = 0
+	fc = {'type':'FeatureCollection','features':[]}
+	adds = dict()
+
+	
+	with connection.cursor() as cursor:
+		cursor.execute("select r.mpi1, r.mpi2, ST_MakeLine(r.geom1, r.geom2) as geom, r.distance from (select n1.id as id1, n1.nombre_mpi as mpi1, n1.geom as geom1, n1.date as date1, n2.id as id2, n2.nombre_mpi as mpi2, n2.geom as geom2, n2.date as date2, ST_Distance(n1.geom, n2.geom) as distance from (select DISTINCT ON (m.nombre_mpi) m.id, m.nombre_mpi, ST_Transform(ST_Centroid(m.geom), 4326) as geom, a.date from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true order by m.nombre_mpi ASC, a.date ASC) n1, (select DISTINCT ON (m.nombre_mpi) m.id, m.nombre_mpi, ST_Transform(ST_Centroid(m.geom), 4326) as geom, a.date from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true order by m.nombre_mpi ASC, a.date ASC) n2 where n1.id <> n2.id order by n1.nombre_mpi asc, distance asc) as r order by r.mpi1;")
+		rows = cursor.fetchall()
+		for j in range(len(rows)):
+			key = rows[j][0]
+			key = key.replace(" ", "")
+			key = key.replace("ñ", "n")
+			print(key, rows[j][3])
+			if not key in adds.keys():
+				adds[key] = 0
+			if adds[key] < 7:
+				line = GEOSGeometry(rows[j][2])
+				#l1.append(list(line.coords[0]))
+				#l1.append(list(line.coords[1]))
+				f2 = {'type':'Feature','geometry':{'type':'LineString','coordinates':[]},'properties':{}}
+				f2['geometry']['coordinates'] = line.coords
+				adds[key] = adds[key] + 1
+				fc['features'].append(f2)
+			i = i +1
+		#print(adds)
+	return HttpResponse(json.dumps(fc))
+	#return HttpResponse(l1)
+
 def index(request):
 	# t = "(-75.574974, 6.307394),(-74.970628, 5.844590)"
 	# ls = LineString(ast.literal_eval(t))
