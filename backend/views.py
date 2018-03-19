@@ -1,5 +1,5 @@
 from django.http import HttpResponseRedirect, HttpResponse
-from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.geos import GEOSGeometry, LineString
 from .models import Activity
 import ast
 from django.shortcuts import render
@@ -131,75 +131,100 @@ def network2(request):
 	return HttpResponse(json.dumps(fc))
 	#return HttpResponse(l1)
 
-# @csrf_exempt
-# def local_networks(request):
-# 	"""
-# 	Devuelve la redes locales de la legion del afecto. Cada red local debe estar unida con otro red local
-# 	"""
-# 	i = 0
-# 	j = 0
-# 	k = 0
-# 	fc = {'type':'FeatureCollection','features':[]}
-# 	adds = dict()
-# 	nodes = dict()
-# 	main_nodes = [1, 428, ,212, 640, 1108, 756, 879, 725, 773, 387, 976, 917, 984, 816, , 514, 259, 180, 22, 77, 104, 37]
-# 	second_nodes = [[1,369,368,411], [465,474,435,390,523,505,408,406,375,395,401,449], [438,452,522], [], [640,615], 
-# 	[557,1107,605,607,544], [697, 613], [848, 890, 869, 832, 877], [827, 885, 893, 868], [685, 587, 710, 714, 693, 591, 563], 
-# 	[748, 755, 752, 778], [293, 298, 184, 163, 1119, 277, 235], [, 1028], [1031, 970, 991, 961, 931, 953, 1027, 1045, 994, 997], 
-# 	[921], [799, 801, 901, 884, 642], [762, 784, 758, 639], [535, 493, 527, 534, 515, 503, 520, 568, 540, 565, 402], 
-# 	]
+@csrf_exempt
+def local_networks(request):
+	"""
+	Devuelve la redes locales de la legion del afecto. Cada red local debe estar unida con otro red local
+	"""
+	i = 0
+	j = 0
+	k = 0
+	fc = {'type':'FeatureCollection','features':[]}
+	adds = dict()
+	nodes = dict()#diccionario con todos los nodos, con su respectiva clave
+	main_nodes = [378, 428, 212, 640, 1108, 756, 872, 879, 725, 773, 387, 917, 984, 816, 723, 514, 259, 180, 22, 77, 104, 37]
+	second_nodes = [[369,368,411], [465,474,435,390,523,505,408,406,375,395,401,449], [178,219,202], [615], 
+	[557,1107,605,607,544], [697, 613], [848, 890, 869, 832, 877], [827, 885, 893, 868], [685, 587, 710, 714, 693, 591, 563], 
+	[748, 755, 752, 778], [293, 298, 184, 163, 1119, 277, 235], [1031, 970, 991, 961, 931, 953, 1027, 1045, 994, 997], 
+	[921], [799, 801, 901, 884, 642], [762, 784, 758, 639], [535, 493, 527, 534, 515, 503, 520, 568, 540, 565, 402], 
+	[198, 196, 233, 199, 200, 252, 258], [131, 241, 181], [6, 87, 109, 136, 149], [100, 139, 78, 85, 112, 142, 99, 1093, 137, 155, 145, 159], 
+	[86, 90, 1104, 91, 72, 123], [80, 81, 74, 73]]
 	
-# 	local1 = [1,369,368,411]
-# 	local2 = [465,474,435,390,523,505,408,406,375,395,401,449]
-# 	local3 = [438,452,522]
-# 	local4 = []
-# 	local5 = [640,615]
-# 	local6 = [557,1107,605,607,544]
-# 	local7 = [697, 613]
-# 	local8 = [848, 890, 869, 832, 877]
-# 	local9 = [827, 885, 893, 868]
-# 	local10 = [685, 587, 710, 714, 693, 591, 563]
-# 	local11 = [748, 755, 752, 778]
-# 	local12 = [293, 298, 184, 163, 1119, 277, 235]
-# 	local13 = [, 1028]
-# 	local14 = [1031, 970, 991, 961, 931, 953, 1027, 1045, 994, 997]
-# 	local15 = [921]
-# 	local16 = [799, 801, 901, 884, 642]
-# 	local17 = [762, 784, 758, 639]
-# 	local18 = [535, 493, 527, 534, 515, 503, 520, 568, 540, 565, 402]
-# 	local19 = [198, 196, 233, 199, 200, 252, 258]
-# 	local20 = [131, 241, 181]
-# 	local21 = [6, 87, 109, 136, 149]
-# 	local22 = [100, 139, 78, 85, 112, 142, 99, 1093, 137, 155, 145, 159]
-# 	local23 = [86, 90, 1104, 91, 72, 123]
-# 	local24 = [80, 81, 74, 73]
+	# local1 = [369,368,411]
+	# local2 = [465,474,435,390,523,505,408,406,375,395,401,449]
+	# local3 = [438,452,522]#pendiente por nodo central marmato
+	# local4 = [178,219,202]
+	# local5 = [615]
+	# local6 = [557,1107,605,607,544]
+	# local7 = [697, 613]
+	# local8 = [848, 890, 869, 832, 877]
+	# local9 = [827, 885, 893, 868]
+	# local10 = [685, 587, 710, 714, 693, 591, 563]
+	# local11 = [748, 755, 752, 778]
+	# local12 = [293, 298, 184, 163, 1119, 277, 235]
+	# local13 = [, 1028] #falta pasto
+	# local14 = [1031, 970, 991, 961, 931, 953, 1027, 1045, 994, 997]
+	# local15 = [921]
+	# local16 = [799, 801, 901, 884, 642]
+	# local17 = [762, 784, 758, 639]
+	# local18 = [535, 493, 527, 534, 515, 503, 520, 568, 540, 565, 402]
+	# local19 = [198, 196, 233, 199, 200, 252, 258]
+	# local20 = [131, 241, 181]
+	# local21 = [6, 87, 109, 136, 149]
+	# local22 = [100, 139, 78, 85, 112, 142, 99, 1093, 137, 155, 145, 159]
+	# local23 = [86, 90, 1104, 91, 72, 123]
+	# local24 = [80, 81, 74, 73]
 
 
-	# with connection.cursor() as cursor:
-	# 	cursor.execute("select min(m.id) as id, m.nombre_mpi as nombre, min(ST_Transform(m.geom, 4326)) as geom from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true group by m.nombre_mpi order by id;")
-	# 	rows = cursor.fetchall()
-	# 	for row in rows:
-	# 		if(not row[0] in nodes.keys())
-	# 			nodes[row[0]] = {"id":row[0], "nombre":row[1], "geom":row[2]}
-					
-		# for j in range(len(rows)):
-		# 	key = rows[j][0]
-		# 	key = key.replace(" ", "")
-		# 	key = key.replace("ñ", "n")
-		# 	print(key, rows[j][3])
-		# 	if not key in adds.keys():
-		# 		adds[key] = 0
-		# 	if adds[key] < 1:
-		# 		line = GEOSGeometry(rows[j][2])
-		# 		#l1.append(list(line.coords[0]))
-		# 		#l1.append(list(line.coords[1]))
-		# 		f2 = {'type':'Feature','geometry':{'type':'LineString','coordinates':[]},'properties':{}}
-		# 		f2['geometry']['coordinates'] = line.coords
-		# 		adds[key] = adds[key] + 1
-		# 		fc['features'].append(f2)
-		# 	i = i +1
-		#print(adds)
-	#return HttpResponse(json.dumps(fc))
+	with connection.cursor() as cursor:
+		cursor.execute("select min(m.id) as id, m.nombre_mpi as nombre, min(ST_Transform(ST_Centroid(m.geom), 4326)) as geom from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true group by m.nombre_mpi order by id;")
+		rows = cursor.fetchall()
+		for row in rows:
+			if(not row[0] in nodes.keys()):
+				nodes[row[0]] = {"id":row[0], "nombre":row[1], "geom":row[2]}
+	
+	for i in range(len(main_nodes)):
+		p1 = GEOSGeometry(nodes[main_nodes[i]]["geom"])
+		for j in range(len(second_nodes[i])):
+			p2 = GEOSGeometry(nodes[second_nodes[i][j]]["geom"])
+			line1 = LineString(p1.coords, p2.coords)
+			f1 = {'type':'Feature','geometry':{'type':'LineString','coordinates':[]},'properties':{'nombre':''}}
+			f1['properties']['nombre'] = nodes[main_nodes[i]]["nombre"] + "-" + nodes[second_nodes[i][j]]["nombre"]
+			f1['geometry']['coordinates'] = line1.coords
+			fc['features'].append(f1)
+			for k in range(j, len(second_nodes[i])-1):
+				p3 = GEOSGeometry(nodes[second_nodes[i][k+1]]["geom"])
+				line2 = LineString(p2.coords, p3.coords)
+				f2 = {'type':'Feature','geometry':{'type':'LineString','coordinates':[]},'properties':{'nombre':''}}
+				f2['properties']['nombre'] = nodes[second_nodes[i][j]]["nombre"] + "-" + nodes[second_nodes[i][j+1]]["nombre"]
+				f2['geometry']['coordinates'] = line2.coords
+				fc['features'].append(f2)
+
+		if k==0:
+			print(p1.coords)
+			print(p2.coords)
+
+		k = k + 1
+
+	return HttpResponse(json.dumps(fc))	
+	# 	for j in range(len(rows)):
+	# 		key = rows[j][0]
+	# 		key = key.replace(" ", "")
+	# 		key = key.replace("ñ", "n")
+	# 		print(key, rows[j][3])
+	# 		if not key in adds.keys():
+	# 			adds[key] = 0
+	# 		if adds[key] < 1:
+	# 			line = GEOSGeometry(rows[j][2])
+	# 			#l1.append(list(line.coords[0]))
+	# 			#l1.append(list(line.coords[1]))
+	# 			f2 = {'type':'Feature','geometry':{'type':'LineString','coordinates':[]},'properties':{}}
+	# 			f2['geometry']['coordinates'] = line.coords
+	# 			adds[key] = adds[key] + 1
+	# 			fc['features'].append(f2)
+	# 		i = i +1
+	# 	print(adds)
+	# return HttpResponse(json.dumps(fc))
 	return HttpResponse("Ejecutado Exitosamente")
 
 def index(request):
