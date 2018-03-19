@@ -71,7 +71,7 @@ def municipios(request):
 	Devuelve todos los municipios en formato GeoJson
 	"""
 	with connection.cursor() as cursor:
-		cursor.execute("SELECT row_to_json(fc) FROM (SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select id, nombre_mpi, ST_Transform(geom, 4326) as geom from municipios) as lp) As f) As fc;")
+		cursor.execute("SELECT row_to_json(fc) FROM (SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select id, nombre_mpi, ST_Transform(ST_ForceRHR(geom), 4326) as geom from municipios) as lp) As f) As fc;")
 		row = cursor.fetchone()
 	return HttpResponse(json.dumps(row[0]))
 
