@@ -188,21 +188,30 @@ def local_networks(request):
 		for j in range(len(second_nodes[i])):
 			p2 = GEOSGeometry(nodes[second_nodes[i][j]]["geom"])
 			line1 = LineString(p1.coords, p2.coords)
+			with connection.cursor() as cursor:
+				cursor.execute("select ST_CurveToLine('CIRCULARSTRING(' || st_x(st_startpoint(%s)) || ' ' || st_y(st_startpoint(%s)) || ', ' || st_x(st_centroid(ST_OffsetCurve(%s, st_length(%s)/10, 'quad_segs=4 join=bevel'))) || ' ' || st_y(st_centroid(ST_OffsetCurve(%s, st_length(%s)/10, 'quad_segs=4 join=bevel'))) || ', ' || st_x(st_endpoint(%s)) || ' ' ||  st_y(st_endpoint(%s)) || ')') AS the_curved_geom;", [line1.wkt,line1.wkt,line1.wkt,line1.wkt,line1.wkt,line1.wkt,line1.wkt,line1.wkt])
+				row2 =  cursor.fetchone()
+				line1 = GEOSGeometry(row2[0])
 			f1 = {'type':'Feature','geometry':{'type':'LineString','coordinates':[]},'properties':{'nombre':''}}
 			f1['properties']['nombre'] = nodes[main_nodes[i]]["nombre"] + "-" + nodes[second_nodes[i][j]]["nombre"]
 			f1['geometry']['coordinates'] = line1.coords
 			fc['features'].append(f1)
-			for k in range(j, len(second_nodes[i])-1):
-				p3 = GEOSGeometry(nodes[second_nodes[i][k+1]]["geom"])
-				line2 = LineString(p2.coords, p3.coords)
-				f2 = {'type':'Feature','geometry':{'type':'LineString','coordinates':[]},'properties':{'nombre':''}}
-				f2['properties']['nombre'] = nodes[second_nodes[i][j]]["nombre"] + "-" + nodes[second_nodes[i][j+1]]["nombre"]
-				f2['geometry']['coordinates'] = line2.coords
-				fc['features'].append(f2)
+			# for k in range(j, len(second_nodes[i])-1):
+			# 	p3 = GEOSGeometry(nodes[second_nodes[i][k+1]]["geom"])
+			# 	line2 = LineString(p2.coords, p3.coords)
+			# 	with connection.cursor() as cursor:
+			# 		cursor.execute("select ST_CurveToLine('CIRCULARSTRING(' || st_x(st_startpoint(%s)) || ' ' || st_y(st_startpoint(%s)) || ', ' || st_x(st_centroid(ST_OffsetCurve(%s, st_length(%s)/10, 'quad_segs=4 join=bevel'))) || ' ' || st_y(st_centroid(ST_OffsetCurve(%s, st_length(%s)/10, 'quad_segs=4 join=bevel'))) || ', ' || st_x(st_endpoint(%s)) || ' ' ||  st_y(st_endpoint(%s)) || ')') AS the_curved_geom;", [line2.wkt,line2.wkt,line2.wkt,line2.wkt,line2.wkt,line2.wkt,line2.wkt,line2.wkt])
+			# 		row3 =  cursor.fetchone()
+			# 		line2 = GEOSGeometry(row3[0])
+			# 	f2 = {'type':'Feature','geometry':{'type':'LineString','coordinates':[]},'properties':{'nombre':''}}
+			# 	f2['properties']['nombre'] = nodes[second_nodes[i][j]]["nombre"] + "-" + nodes[second_nodes[i][j+1]]["nombre"]
+			# 	f2['geometry']['coordinates'] = line2.coords
+			# 	fc['features'].append(f2)
 
 		if k==0:
-			print(p1.coords)
-			print(p2.coords)
+			print(line1.coords)
+			#print(p1.coords)
+			#print(p2.coords)
 
 		k = k + 1
 
