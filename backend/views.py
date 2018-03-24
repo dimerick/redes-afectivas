@@ -47,12 +47,22 @@ def activity_list(request):
     if request.method == 'GET':
     	return HttpResponse(serialize('geojson', Activity.objects.all(), geometry_field='geom', fields=('id', 'date', 'place', 'name', 'description', 'num_person', 'instruments', 'focus', 'vos', 'result')))
 
+# @csrf_exempt
+# def activity_for_date(request, date_s, date_f):
+#     """
+#     Devuelve las actividades registradas por rango de fechas en formato GeoJson
+#     """
+#     return HttpResponse(serialize('geojson', Activity.objects.filter(date__range=(date_s, date_f)), geometry_field='geom', fields=('id', 'date', 'place', 'name', 'description', 'num_person', 'instruments', 'focus', 'vos', 'result')))
+
 @csrf_exempt
 def activity_for_date(request, date_s, date_f):
-    """
-    Devuelve las actividades registradas por rango de fechas en formato GeoJson
-    """
-    return HttpResponse(serialize('geojson', Activity.objects.filter(date__range=(date_s, date_f)), geometry_field='geom', fields=('id', 'date', 'place', 'name', 'description', 'num_person', 'instruments', 'focus', 'vos', 'result')))
+	"""
+	Devuelve las actividades registradas por rango de fechas en formato GeoJson
+	"""
+	with connection.cursor() as cursor:
+		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (SELECT id, date, place, name, description, num_person, geom, instruments, focus, vos, result FROM backend_activity WHERE date BETWEEN %s AND %s ORDER BY id) as lp) As f) As fc;", [date_s, date_f])
+		row = cursor.fetchone()
+	return HttpResponse(json.dumps(row[0]))
 
 @csrf_exempt
 def activity_for_municipio(request, date_s, date_f, pk_mun):
@@ -215,7 +225,7 @@ def local_networks(request):
 
 		k = k + 1
 
-	return HttpResponse(json.dumps(fc))	
+	return HttpResponse(json.dumps(fc))
 	# 	for j in range(len(rows)):
 	# 		key = rows[j][0]
 	# 		key = key.replace(" ", "")
