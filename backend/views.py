@@ -88,13 +88,24 @@ def municipios(request):
 @csrf_exempt
 def nodes(request):
 	"""
-	Devuelve el centroide de cada uno de los municipios donde la legión del afecto realizó actividades
+	Devuelve el centroide de cada uno de los municipios donde la legión del afecto realizó actividades, detallando cuantas actividades se realizaron por cada municipio
 	"""
 	with connection.cursor() as cursor:
 		#cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select DISTINCT ON (m.nombre_mpi) m.id, m.nombre_mpi, ST_Transform(ST_Centroid(m.geom), 4326) as geom, a.date from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true order by m.nombre_mpi ASC, a.date ASC) as lp) As f) As fc;")
 		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select m.nombre_mpi, ST_Transform(min(ST_Centroid(m.geom)), 4326) as geom, count(m.nombre_mpi) as num from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true group by m.nombre_mpi order by m.nombre_mpi ASC) as lp) As f) As fc;")
 		row = cursor.fetchone()
 	return HttpResponse(json.dumps(row[0]))
+
+@csrf_exempt
+def nodes_cant_person(request):
+	"""
+	Devuelve el centroide de cada uno de los municipios donde la legión del afecto realizó actividades, detallando cuantas personas fueron impactadas en cada municipio
+	"""
+	with connection.cursor() as cursor:
+		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select m.id, m.nombre_mpi, sum(a.num_person) as cant_person, ST_Transform(ST_Centroid(m.geom), 4326) as geom from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true group by m.id order by m.nombre_mpi ASC) as lp) As f) As fc;")
+		row = cursor.fetchone()
+	return HttpResponse(json.dumps(row[0]))
+
 
 @csrf_exempt
 def network(request):
