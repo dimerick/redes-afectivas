@@ -70,7 +70,7 @@ def presence_for_year(request, date_s, date_f):
 	Devuelve los municipios donde habia llegado la legion por rango de años
 	"""
 	with connection.cursor() as cursor:
-		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select m.id, m.nombre_mpi, min(a.date), ST_Transform(ST_ForceRHR(m.geom), 4326) as geom from municipios m, backend_activity a where a.date BETWEEN %s AND %s AND ST_Within(ST_Transform(a.geom, 21897), m.geom)=true group by m.id order by nombre_mpi) as lp) As f) As fc;", [date_s, date_f])
+		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select m.id, m.nombre_mpi, min(a.date), ST_Transform(ST_ForceRHR(m.geom), 4326) as geom from municipios m, backend_activity a where a.date BETWEEN %s AND %s AND ST_Within(ST_Transform(a.geom, 4326), ST_Transform(m.geom, 4326))=true group by m.id order by nombre_mpi) as lp) As f) As fc;", [date_s, date_f])
 		row = cursor.fetchone()
 	return HttpResponse(json.dumps(row[0]))
 
