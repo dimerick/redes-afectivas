@@ -102,7 +102,7 @@ def municipios_mod(request):
 	Devuelve todos los municipios modificando su ubicacion en formato GeoJson
 	"""
 	with connection.cursor() as cursor:
-		cursor.execute("SELECT row_to_json(fc) FROM (SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select id, nombre_mpi, ST_Translate(ST_Transform(ST_ForceRHR(geom), 4326), 1, 1) as geom from municipios) as lp) As f) As fc;")
+		cursor.execute("SELECT row_to_json(fc) FROM (SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select id, nombre_mpi, ST_RotateX(ST_Translate(ST_Transform(ST_ForceRHR(geom), 4326), 0.01, 0.05), 0.1) as geom from municipios) as lp) As f) As fc;")
 		row = cursor.fetchone()
 	return HttpResponse(json.dumps(row[0]))
 
