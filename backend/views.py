@@ -71,7 +71,7 @@ def presence_for_year(request, date_s, date_f):
 	"""
 	with connection.cursor() as cursor:
 		#cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select m.id, m.nombre_mpi, min(a.date), ST_Transform(ST_ForceRHR(m.geom), 4326) as geom from municipios m, backend_activity a where a.date BETWEEN %s AND %s AND ST_Within(ST_Transform(a.geom, 4326), ST_Transform(m.geom, 4326))=true group by m.id order by nombre_mpi) as lp) As f) As fc;", [date_s, date_f])
-		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select m.id, min(m.nombre_mpi) as mpi, ST_RotateX(ST_Translate(T_Transform(min(m.geom),4326), 0.01, 0.05), 0.1) as geom from (select geom, date from backend_activity where date BETWEEN %s AND %s) as a join (select id, geom, nombre_mpi from municipios) as m ON ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true group by m.id) as lp) As f) As fc;", [date_s, date_f])
+		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select m.id, min(m.nombre_mpi) as mpi, ST_RotateX(ST_Translate(T_Transform(min(m.geom),4326), 0.03, 0.05), 0.1) as geom from (select geom, date from backend_activity where date BETWEEN %s AND %s) as a join (select id, geom, nombre_mpi from municipios) as m ON ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true group by m.id) as lp) As f) As fc;", [date_s, date_f])
 		row = cursor.fetchone()
 	return HttpResponse(json.dumps(row[0]))
 
@@ -81,7 +81,7 @@ def activity_for_municipio(request, date_s, date_f, pk_mun):
 	Devuelves las actividades realizadas en un municpio en un rango de fechas en formato GeoJson
 	"""
 	with connection.cursor() as cursor:
-		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, row_to_json(lp) As properties FROM backend_activity As lg INNER JOIN (SELECT id, date, place, name, description, num_person, instruments, focus, vos, result FROM backend_activity) As lp ON lg.id = lp.id, municipios m WHERE m.id=%s AND lp.date BETWEEN %s AND %s AND ST_Within(lg.geom,  ST_RotateX(ST_Translate(ST_Transform(m.geom, 4326), 0.01, 0.05), 0.1))=true) As f) As fc;", [pk_mun, date_s, date_f])
+		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, row_to_json(lp) As properties FROM backend_activity As lg INNER JOIN (SELECT id, date, place, name, description, num_person, instruments, focus, vos, result FROM backend_activity) As lp ON lg.id = lp.id, municipios m WHERE m.id=%s AND lp.date BETWEEN %s AND %s AND ST_Within(lg.geom,  ST_RotateX(ST_Translate(ST_Transform(m.geom, 4326), 0.03, 0.05), 0.1))=true) As f) As fc;", [pk_mun, date_s, date_f])
 		row = cursor.fetchone()
 	return HttpResponse(json.dumps(row[0]))
 	# return HttpResponse(serialize('geojson', Activity.objects.filter(geom__within=poly, date__range=(date_s, date_f)), geometry_field='geom', fields=('name',)))
@@ -92,7 +92,7 @@ def municipios(request):
 	Devuelve todos los municipios en formato GeoJson
 	"""
 	with connection.cursor() as cursor:
-		cursor.execute("SELECT row_to_json(fc) FROM (SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select id, nombre_mpi, ST_Transform(ST_ForceRHR(geom), 4326) as geom from municipios) as lp) As f) As fc;")
+		cursor.execute("SELECT row_to_json(fc) FROM (SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select id, nombre_mpi, ST_RotateX(ST_Translate(ST_Transform(ST_ForceRHR(geom), 4326), 0.03, 0.05), 0.1) as geom from municipios) as lp) As f) As fc;")
 		row = cursor.fetchone()
 	return HttpResponse(json.dumps(row[0]))
 
@@ -112,8 +112,8 @@ def nodes(request):
 	Devuelve el centroide de cada uno de los municipios donde la legión del afecto realizó actividades, detallando cuantas actividades se realizaron por cada municipio
 	"""
 	with connection.cursor() as cursor:
-		#cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select DISTINCT ON (m.nombre_mpi) m.id, m.nombre_mpi, ST_Transform(ST_Centroid(m.geom), 4326) as geom, a.date from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true order by m.nombre_mpi ASC, a.date ASC) as lp) As f) As fc;")
-		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select m.nombre_mpi, ST_RotateX(ST_Translate(ST_Transform(min(ST_Centroid(m.geom)), 4326), 0.01, 0.05), 0.1) as geom, count(m.nombre_mpi) as num from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true group by m.nombre_mpi order by m.nombre_mpi ASC) as lp) As f) As fc;")
+		#cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select m.nombre_mpi, ST_RotateX(ST_Translate(ST_Transform(min(ST_Centroid(m.geom)), 4326), 0.03, 0.05), 0.1) as geom, count(m.nombre_mpi) as num from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true group by m.nombre_mpi order by m.nombre_mpi ASC) as lp) As f) As fc;")
+		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select m.nombre_mpi, ST_Centroid(ST_RotateX(ST_Translate(ST_Transform(min(m.geom), 4326), 0.03, 0.05), 0.1)) as geom, count(m.nombre_mpi) as num from municipios m, backend_activity a where ST_Contains(ST_RotateX(ST_Translate(ST_Transform(m.geom, 4326), 0.03, 0.05), 0.1), a.geom)=true group by m.nombre_mpi order by m.nombre_mpi ASC) as lp) As f) As fc;")
 		row = cursor.fetchone()
 	return HttpResponse(json.dumps(row[0]))
 
@@ -123,7 +123,8 @@ def nodes_cant_person(request):
 	Devuelve el centroide de cada uno de los municipios donde la legión del afecto realizó actividades, detallando cuantas personas fueron impactadas en cada municipio
 	"""
 	with connection.cursor() as cursor:
-		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select m.id, m.nombre_mpi, sum(a.num_person) as cant_person,  ST_RotateX(ST_Translate(ST_Transform(ST_Centroid(m.geom), 4326), 0.01, 0.05), 0.1) as geom from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true group by m.id order by m.nombre_mpi ASC) as lp) As f) As fc;")
+		#cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select m.id, m.nombre_mpi, sum(a.num_person) as cant_person,  ST_RotateX(ST_Translate(ST_Transform(ST_Centroid(m.geom), 4326), 0.01, 0.05), 0.1) as geom from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true group by m.id order by m.nombre_mpi ASC) as lp) As f) As fc;")
+		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select m.id, m.nombre_mpi, sum(a.num_person) as cant_person, ST_Centroid(ST_RotateX(ST_Translate(ST_Transform(min(m.geom), 4326), 0.03, 0.05), 0.1)) as geom from municipios m, backend_activity a where ST_Contains(ST_RotateX(ST_Translate(ST_Transform(m.geom, 4326), 0.03, 0.05), 0.1), a.geom)=true group by m.id order by m.nombre_mpi ASC) as lp) As f) As fc;")
 		row = cursor.fetchone()
 	return HttpResponse(json.dumps(row[0]))
 
@@ -219,7 +220,8 @@ def local_networks(request):
 
 
 	with connection.cursor() as cursor:
-		cursor.execute("select min(m.id) as id, m.nombre_mpi as nombre, min(ST_RotateX(ST_Translate(ST_Transform(ST_Centroid(m.geom), 4326), 0.01, 0.05), 0.1)) as geom from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true group by m.nombre_mpi order by id;")
+		#cursor.execute("select min(m.id) as id, m.nombre_mpi as nombre, min(ST_RotateX(ST_Translate(ST_Transform(ST_Centroid(m.geom), 4326), 0.01, 0.05), 0.1)) as geom from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true group by m.nombre_mpi order by id;")
+		cursor.execute("select min(m.id) as id, m.nombre_mpi as nombre, ST_Centroid(ST_RotateX(ST_Translate(ST_Transform(min(m.geom), 4326), 0.03, 0.05), 0.1)) as geom from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true group by m.nombre_mpi order by id;")
 		rows = cursor.fetchall()
 		for row in rows:
 			if(not row[0] in nodes.keys()):
