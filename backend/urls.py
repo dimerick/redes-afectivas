@@ -24,7 +24,8 @@ urlpatterns = [
     path('network2', views.network2, name='network2'),
     path('local-networks', views.local_networks, name='local-networks'),
     path('municipios', views.municipios, name='municipios'),
-    path('presence-for-year/<str:date_s>/<str:date_f>', views.presence_for_year, name='presence-for-year')
+    path('presence-for-year/<str:date_s>/<str:date_f>', views.presence_for_year, name='presence-for-year'),
+    # path('upload-shapes', views.upload_shapes, name='upload-shapes'),
     # path('users/', views.UserViewSet, name='users'),
     # path('groups/', views.GroupViewSet, name='groups'),
 ]

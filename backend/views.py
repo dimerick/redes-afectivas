@@ -103,7 +103,7 @@ def nodes(request):
 	"""
 	with connection.cursor() as cursor:
 		#cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select DISTINCT ON (m.nombre_mpi) m.id, m.nombre_mpi, ST_Transform(ST_Centroid(m.geom), 4326) as geom, a.date from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true order by m.nombre_mpi ASC, a.date ASC) as lp) As f) As fc;")
-		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select m.nombre_mpi, ST_Transform(min(ST_Centroid(m.geom)), 4326) as geom, count(m.nombre_mpi) as num from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true group by m.nombre_mpi order by m.nombre_mpi ASC) as lp) As f) As fc;")
+		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select min(m.id), m.nombre_mpi, ST_Transform(min(ST_Centroid(m.geom)), 4326) as geom, count(m.nombre_mpi) as num from municipios m, backend_activity a where ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true group by m.nombre_mpi order by m.nombre_mpi ASC) as lp) As f) As fc;")
 		row = cursor.fetchone()
 	return HttpResponse(json.dumps(row[0]))
 
@@ -174,10 +174,10 @@ def local_networks(request):
 	fc = {'type':'FeatureCollection','features':[]}
 	adds = dict()
 	nodes = dict()#diccionario con todos los nodos, con su respectiva clave
-	main_nodes = [378, 428, 212, 640, 1108, 756, 872, 879, 725, 773, 387, 917, 984, 816, 723, 514, 259, 180, 22, 77, 104, 37]
-	second_nodes = [[369,368,411], [465,474,435,390,523,505,408,406,375,395,401,449], [178,219,202], [615], 
-	[557,1107,605,607,544], [697, 613], [848, 890, 869, 832, 877], [827, 885, 893, 868], [685, 587, 710, 714, 693, 591, 563], 
-	[748, 755, 752, 778], [293, 298, 184, 163, 1119, 277, 235], [1031, 970, 991, 961, 931, 953, 1027, 1045, 994, 997], 
+	main_nodes = [378, 428, 544, 212, 640, 1108, 756, 872, 879, 725, 773, 387, 917, 984, 816, 723, 514, 259, 180, 22, 77, 104, 37]
+	second_nodes = [[369,368,411], [465,474,435,390,523,505,408,406,375,395,401,449], [438,452,522], [178,219,202], [615], 
+	[557,1107,605,607,544], [697, 613], [848, 890, 869, 832, 877], [827, 885, 893, 868, 976], [685, 587, 710, 714, 693, 591, 563], 
+	[748, 755, 752, 778], [293, 298, 184, 163, 1119, 277, 235], [1031, 970, 991, 961, 931, 953, 1027, 1045, 994, 997, 1028], 
 	[921], [799, 801, 901, 884, 642], [762, 784, 758, 639], [535, 493, 527, 534, 515, 503, 520, 568, 540, 565, 402], 
 	[198, 196, 233, 199, 200, 252, 258], [131, 241, 181], [6, 87, 109, 136, 149], [100, 139, 78, 85, 112, 142, 99, 1093, 137, 155, 145, 159], 
 	[86, 90, 1104, 91, 72, 123], [80, 81, 74, 73]]
@@ -190,12 +190,11 @@ def local_networks(request):
 	# local6 = [557,1107,605,607,544]
 	# local7 = [697, 613]
 	# local8 = [848, 890, 869, 832, 877]
-	# local9 = [827, 885, 893, 868]
+	# local9 = [827, 885, 893, 868, 976]
 	# local10 = [685, 587, 710, 714, 693, 591, 563]
 	# local11 = [748, 755, 752, 778]
 	# local12 = [293, 298, 184, 163, 1119, 277, 235]
-	# local13 = [, 1028] #falta pasto
-	# local14 = [1031, 970, 991, 961, 931, 953, 1027, 1045, 994, 997]
+	# local14 = [1031, 970, 991, 961, 931, 953, 1027, 1045, 994, 997, 1028]
 	# local15 = [921]
 	# local16 = [799, 801, 901, 884, 642]
 	# local17 = [762, 784, 758, 639]
@@ -466,6 +465,24 @@ def upload2015(request):
 			print(i, date, place, name, description, num_person, geom.geom_type)
 			i += 1
 	return HttpResponse("Load 2015 Ok")
+
+# def upload_shapes(request):
+# 	i = 0
+# 	with connection.cursor() as cursor:
+# 		with open('geometries-kiss-full.csv','r') as tsv:
+# 			for line in tsv:
+# 				field = line.strip().split(';')
+# 				name = field[2]
+# 				geom_WKT = field[0]
+# 				geom = GEOSGeometry(geom_WKT)
+# 				#cursor.execute("INSERT INTO municipios (geom, nombre_mpi) VALUES (ST_GeomFromText(%s, 4326), %s);", [geom_WKT , name])
+# 				#result = cursor.fetchone()
+# 				#print(result)
+# 				if i == 0:
+# 					print(name);
+# 					print(geom_WKT);
+# 				i = i + 1
+# 	return HttpResponse("Load shapes ok")
 
 #Convierte una fecha del tipo MM/DD/YYYY yo YYYY-MM-DD
 def conv_date(d):
