@@ -174,13 +174,13 @@ def local_networks(request):
 	fc = {'type':'FeatureCollection','features':[]}
 	adds = dict()
 	nodes = dict()#diccionario con todos los nodos, con su respectiva clave
-	main_nodes = [378, 428, 544, 212, 640, 1108, 756, 872, 879, 725, 773, 387, 917, 984, 816, 723, 514, 259, 180, 22, 77, 104, 37]
+	main_nodes = [378, 428, 544, 212, 640, 1108, 756, 872, 879, 725, 773, 387, 917, 984, 816, 723, 514, 259, 180, 22, 77, 104, 80]
 	second_nodes = [[369,368,411], [465,474,435,390,523,505,408,406,375,395,401,449], [438,452,522], [178,219,202], [615], 
-	[557,1107,605,607,544], [697, 613], [848, 890, 869, 832, 877], [827, 893, 868, 976], 
+	[557,1107,605,607,544], [697, 613], [848, 890, 869, 832, 877], [827, 893, 868, 976, 1023, 822], 
 	[685, 587, 710, 714, 693, 591, 563], [748, 755, 752, 778], [293, 298, 184, 163, 1119, 277, 235], 
-	[1031, 970, 991, 961, 931, 953, 1027, 1045, 994, 997, 1028], [921], [799, 801, 901, 884, 642], [762, 784, 758, 639],
+	[1031, 970, 991, 961, 931, 953, 1027, 1045, 994, 997, 1028], [921], [799, 801, 901, 884, 642, 935, 984, 921], [762, 784, 758, 639],
 	[535, 493, 527, 534, 515, 503, 520, 568, 540, 565, 402], [198, 196, 233, 199, 200, 252, 258], [131, 241, 181], 
-	[6, 87, 109, 136, 149], [100, 139, 78, 85, 112, 142, 99, 1093, 137, 155, 145, 159], [86, 90, 1104, 91, 72, 123], [80, 81, 74, 73]]
+	[6, 87, 109, 136, 149], [100, 139, 78, 85, 112, 142, 99, 1093, 137, 155, 145, 159], [86, 90, 1104, 91, 72, 123], [37, 81, 74, 73]]
 	
 	# local1 = [369,368,411]
 	# local2 = [465,474,435,390,523,505,408,406,375,395,401,449]
@@ -267,6 +267,37 @@ def local_networks(request):
 	# return HttpResponse(json.dumps(fc))
 	return HttpResponse("Ejecutado Exitosamente")
 
+def nacional_networks(request):
+	"""
+	Devuelve la red nacional de nodos del proyecto Legión del Afecto, 
+	cada nodo central se une con el nodo central mas cercano
+	"""
+	i = 0
+	j = 0
+	k = 0
+	fc = {'type':'FeatureCollection','features':[]}
+	with connection.cursor() as cursor:
+		#cursor.execute("select g1.id as id1, g1.nombre_mpi as nom1, g2.id as id2, g2.nombre_mpi as nom2, ST_MakeLine(g1.geom, g2.geom) as line from (select id, nombre_mpi, ST_Transform(ST_Centroid(geom), 4326) as geom from municipios where id in (378, 428, 544, 212, 640, 1108, 756, 872, 879, 725, 773, 387, 917, 984, 816, 723, 514, 259, 180, 22, 77, 104, 80)) as g1, (select id, nombre_mpi, ST_Transform(ST_Centroid(geom), 4326) as geom from municipios where id in (378, 428, 544, 212, 640, 1108, 756, 872, 879, 725, 773, 387, 917, 984, 816, 723, 514, 259, 180, 22, 77, 104, 80)) as g2 where g1.id <> g2.id order by g1.nombre_mpi asc, ST_Distance(g1.geom, g2.geom) asc;")
+		cursor.execute("select g1.id as id1, g1.nombre_mpi as nom1, g2.id as id2, g2.nombre_mpi as nom2, ST_MakeLine(g1.geom, g2.geom) as line from (select id, nombre_mpi, ST_Transform(ST_Centroid(geom), 4326) as geom from municipios where id in (378, 428, 544, 212, 640, 1108, 756, 872, 879, 725, 773, 387, 917, 984, 816, 723, 514, 259, 180, 22, 77, 104, 80)) as g1, (select id, nombre_mpi, ST_Transform(ST_Centroid(geom), 4326) as geom from municipios where id in (378, 428, 544, 212, 640, 1108, 756, 872, 879, 725, 773, 387, 917, 984, 816, 723, 514, 259, 180, 22, 77, 104, 80)) as g2 where g1.id <> g2.id order by g1.nombre_mpi desc, ST_Distance(g1.geom, g2.geom) asc;")
+		rows = cursor.fetchall()
+		id_ant = None
+		nodes_adds = []
+		for row in rows:
+			id1 = row[0]
+			id2 = row[2]
+			if((id1 not in nodes_adds) and (id2 not in nodes_adds)):
+				line1 = GEOSGeometry(row[4])
+				cursor.execute("select ST_CurveToLine('CIRCULARSTRING(' || st_x(st_startpoint(%s)) || ' ' || st_y(st_startpoint(%s)) || ', ' || st_x(st_centroid(ST_OffsetCurve(%s, st_length(%s)/10, 'quad_segs=4 join=bevel'))) || ' ' || st_y(st_centroid(ST_OffsetCurve(%s, st_length(%s)/10, 'quad_segs=4 join=bevel'))) || ', ' || st_x(st_endpoint(%s)) || ' ' ||  st_y(st_endpoint(%s)) || ')') AS the_curved_geom;", [line1.wkt,line1.wkt,line1.wkt,line1.wkt,line1.wkt,line1.wkt,line1.wkt,line1.wkt])
+				row2 =  cursor.fetchone()
+				line1 = GEOSGeometry(row2[0])
+				nodes_adds.append(id1)
+				f1 = {'type':'Feature','geometry':{'type':'LineString','coordinates':[]},'properties':{'nombre':''}}
+				f1['properties']['nombre'] = row[1] + "-" + row[3]
+				f1['geometry']['coordinates'] = line1.coords
+				fc['features'].append(f1)
+				#print(row[0], row[1], row[3], row[6])
+	return HttpResponse(json.dumps(fc))
+
 def index(request):
 	# t = "(-75.574974, 6.307394),(-74.970628, 5.844590)"
 	# ls = LineString(ast.literal_eval(t))
@@ -304,6 +335,9 @@ def get_geometries(request):
 		print(pnt.coords[0])
 		file.write(str(pnt.coords[0])+";"+str(pnt.coords[1])+"\n")	
 	return HttpResponse("Se ha generado el archivo con las geometrias exitosamente")
+
+
+
 
 def create_activity(request):
 	if request.method == 'POST':
@@ -465,6 +499,8 @@ def upload2015(request):
 			print(i, date, place, name, description, num_person, geom.geom_type)
 			i += 1
 	return HttpResponse("Load 2015 Ok")
+
+
 
 # def upload_shapes(request):
 # 	i = 0
