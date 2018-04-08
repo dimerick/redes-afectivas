@@ -87,6 +87,16 @@ def activity_for_municipio(request, date_s, date_f, pk_mun):
 	# return HttpResponse(serialize('geojson', Activity.objects.filter(geom__within=poly, date__range=(date_s, date_f)), geometry_field='geom', fields=('name',)))
 
 @csrf_exempt
+def total_activity_for_municipio(request):
+	"""
+	Devuelves las actividades realizadas en un municpio en un rango de fechas en formato GeoJson
+	"""
+	with connection.cursor() as cursor:
+		cursor.execute("SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lp.geom)::json As geometry, row_to_json(lp) As properties FROM (select m.id, min(m.nombre_mpi) as mpi, count(m.id) as num_act, ST_Transform(min(m.geom),4326) as geom from (select geom, date from backend_activity) as a join (select id, geom, nombre_mpi from municipios) as m ON ST_Contains(ST_Transform(m.geom, 4326), a.geom)=true group by m.id) as lp) As f) As fc;")
+		row = cursor.fetchone()
+	return HttpResponse(json.dumps(row[0]))
+
+@csrf_exempt
 def municipios(request):
 	"""
 	Devuelve todos los municipios en formato GeoJson

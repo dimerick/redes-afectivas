@@ -19,6 +19,7 @@ urlpatterns = [
     path('activities/<str:date_s>/<str:date_f>', views.activity_for_date, name='activities-for-date'),
     path('activities/<str:date_s>/<str:date_f>/<str:pk_mun>', views.activity_for_municipio, name='activities-for-municipio'),
     path('nodes', views.nodes, name='nodes'),
+    path('total-activity-for-municipio', views.total_activity_for_municipio, name='total-activity-for-municipio'),
     path('nodes-cant-person', views.nodes_cant_person, name='nodes-cant-person'),
     path('network', views.network, name='network'),
     path('network2', views.network2, name='network2'),
